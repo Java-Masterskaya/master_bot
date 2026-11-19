@@ -7,6 +7,9 @@ JetStream и публикуется в чат менеджеров вместе 
 
 - [Техническое задание](docs/TZ.md)
 - [Доска задач](https://github.com/orgs/Java-Masterskaya/projects/13)
+- [Структура проекта](docs/project-structure.md)
+- [Что уже реализовано](docs/implemented.md)
+- [Как собрать и запустить](docs/build-and-run.md)
 
 Стек: Java 21, Spring Boot 3, Postgres, Flyway, NATS JetStream; оценщик —
 Python 3.12, FastAPI.
