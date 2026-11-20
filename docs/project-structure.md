@@ -3,7 +3,7 @@
 ```
 master_bot
 ├── src/
-│   ├── main/
+│   ├── main/java
 │   │   ├── ru/yandex/masterbot
 │   │   │   ├── adapter/                      # адаптеры наружного мира
 │   │   │   │   ├── http/                     # REST-контроллеры и вебхуки
@@ -17,10 +17,11 @@ master_bot
 │   │   │   └── port/                         # порты: интерфейсы входа и выхода
 │   │   └── resources/
 │   │       ├── application.yml
-│   │       ├── application-test.yml
-│   │       └── db/migration/                 # миграции Flyway
+│   │       └── db/migration/                 # миграции Flyway будут тут
 │   └── test/
-│       └── java/com/example/masterbot/       # Тесты
+│       ├── java/com/example/masterbot/       # Тесты
+│       └── resources/
+│           └── application-test.yml
 ├── config/
 │   └── checkstyle/                           # конфигурация Checkstyle
 ├── .github/
@@ -28,6 +29,5 @@ master_bot
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── docker-compose.yml
-├── Dockerfile
 └── README.md
 ```

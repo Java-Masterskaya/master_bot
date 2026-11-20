@@ -14,4 +14,3 @@ JetStream и публикуется в чат менеджеров вместе 
 Стек: Java 21, Spring Boot 3, Postgres, Flyway, NATS JetStream; оценщик —
 Python 3.12, FastAPI.
 
-Сборка и запуск появятся с задачей INF-01.
