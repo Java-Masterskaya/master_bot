@@ -55,7 +55,7 @@ tasks.withType<Test> {
 spotless {
     java {
         target("src/**/*.java")
-        palantirJavaFormat()
+        googleJavaFormat() // стиль Google: 2 пробела, 100 символов
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
@@ -64,7 +64,17 @@ spotless {
 
 checkstyle {
     toolVersion = "10.26.1"
-    configFile = file("config/checkstyle/easy-checkstyle.xml")
+    val archive = configurations.checkstyle.get().resolve().filter {
+        it.name.startsWith("checkstyle")
+    }
+    config = resources.text.fromArchiveEntry(archive, "google_checks.xml")
+
+    configProperties = mapOf(
+        "org.checkstyle.google.suppressionfilter.config" to
+                file("config/checkstyle/suppressions.xml").absolutePath
+    )
+
+    isIgnoreFailures = false
     maxWarnings = 0
 }
 
