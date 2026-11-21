@@ -8,6 +8,7 @@ JetStream и публикуется в чат менеджеров вместе 
 - [Техническое задание](docs/TZ.md)
 - [Доска задач](https://github.com/orgs/Java-Masterskaya/projects/13)
 - [Структура проекта](docs/project-structure.md)
+- [Схема базы данных](docs/database-map.md)
 - [Что уже реализовано](docs/implemented.md)
 - [Как собрать и запустить](docs/build-and-run.md)
 - [Что сделать перед коммитом](docs/before-committing.md)
