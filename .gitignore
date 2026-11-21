@@ -45,3 +45,5 @@ bin/
 
 ### Personal folder ###
 2Alex1531_docs/
+# Local environment secrets
+.env
