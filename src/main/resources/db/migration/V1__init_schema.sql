@@ -1,4 +1,3 @@
-
 -- =============================================================================
 -- V1__init_schema.sql
 --
@@ -273,32 +272,6 @@ CREATE INDEX idx_applications_status_created_id
     ON applications (status, created_at, id);
 
 
--- -------------------------------------------------------------------------
--- Описание таблицы и основных колонок в метаданных PostgreSQL
--- -------------------------------------------------------------------------
-
-COMMENT ON TABLE applications IS
-    'Основная таблица заявок пользователей.';
-
-COMMENT ON COLUMN applications.id IS
-    'Внутренний UUID заявки.';
-
-COMMENT ON COLUMN applications.number IS
-    'Последовательный человекочитаемый номер заявки.';
-
-COMMENT ON COLUMN applications.source IS
-    'Источник создания заявки: канал или внутренний процесс.';
-
-COMMENT ON COLUMN applications.raw_payload IS
-    'Исходные данные заявки в формате JSONB.';
-
-COMMENT ON COLUMN applications.status IS
-    'Текущий бизнес-статус заявки.';
-
-COMMENT ON COLUMN applications.version IS
-    'Версия записи для optimistic locking.';
-
-
 -- =============================================================================
 -- 3. APPLICATION_STATUS_HISTORY — ИСТОРИЯ ИЗМЕНЕНИЙ СТАТУСОВ
 -- =============================================================================
@@ -373,10 +346,6 @@ CREATE INDEX idx_application_status_history_application
     ON application_status_history (application_id, created_at);
 
 
-COMMENT ON TABLE application_status_history IS
-    'История переходов заявок между бизнес-статусами.';
-
-
 -- =============================================================================
 -- 4. DIALOG_STATES — СОСТОЯНИЕ ДИАЛОГОВ
 -- =============================================================================
@@ -431,10 +400,6 @@ CREATE TABLE dialog_states (
     -- в рамках конкретного канала.
     PRIMARY KEY (channel, user_id)
 );
-
-
-COMMENT ON TABLE dialog_states IS
-    'Текущее состояние многошаговых пользовательских диалогов.';
 
 
 -- =============================================================================
@@ -499,10 +464,6 @@ CREATE TABLE channel_inbox (
 );
 
 
-COMMENT ON TABLE channel_inbox IS
-    'Входящие события каналов с защитой от повторной обработки.';
-
-
 -- =============================================================================
 -- 6. CHANNEL_CURSOR — КУРСОР ПОЛУЧЕНИЯ ОБНОВЛЕНИЙ
 -- =============================================================================
@@ -536,10 +497,6 @@ CREATE TABLE channel_cursor (
     -- Время последнего обновления курсора.
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-
-COMMENT ON TABLE channel_cursor IS
-    'Последняя позиция получения обновлений для каждого канала.';
 
 
 -- =============================================================================
@@ -704,13 +661,6 @@ CREATE INDEX idx_outbox_pending_next_attempt
     WHERE status = 'PENDING';
 
 
-COMMENT ON TABLE outbox IS
-    'Очередь исходящих сообщений и событий по Transactional Outbox Pattern.';
-
-COMMENT ON COLUMN outbox.idempotency_key IS
-    'Уникальный ключ для предотвращения повторного создания исходящего события.';
-
-
 -- =============================================================================
 -- 8. EVALUATION_JOBS — ОЧЕРЕДЬ ФОНОВЫХ ЗАДАЧ ОЦЕНКИ ЗАЯВОК
 -- =============================================================================
@@ -795,6 +745,12 @@ CREATE TABLE evaluation_jobs (
     -- Не сохранять здесь секреты, токены и чувствительные данные.
     last_error TEXT,
 
+    -- Исходный JSON-запрос на оценку заявки.
+    -- Соответствует контракту eval.requests.v1.json.
+    -- Содержит schemaVersion, jobId, applicationId и text.
+    -- Сохраняется для воспроизводимости обработки и повторных попыток.
+    request_payload JSONB NOT NULL,
+
     -- Время создания задания.
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -841,38 +797,51 @@ CREATE TABLE evaluation_jobs (
             (status = 'COMPLETED' AND completed_at IS NOT NULL)
             OR
             (status <> 'COMPLETED' AND completed_at IS NULL)
-        )
+        ),
+
+    -- request_payload должен быть JSON-объектом.
+    CONSTRAINT chk_evaluation_jobs_request_payload_object
+        CHECK (jsonb_typeof(request_payload) = 'object')
 );
 
-COMMENT ON TABLE evaluation_jobs IS
-    'Очередь фоновых заданий оценки заявок с повторными попытками и восстановлением зависших заданий.';
 
-COMMENT ON COLUMN evaluation_jobs.status IS
-    'Состояние: PENDING, RUNNING, RETRY, COMPLETED или FAILED.';
+-- =============================================================================
+-- 9. EVALUATION_RESULTS — РЕЗУЛЬТАТЫ ОЦЕНКИ ЗАЯВОК
+-- =============================================================================
 
-COMMENT ON COLUMN evaluation_jobs.attempts IS
-    'Количество начатых попыток; увеличивается атомарно при захвате задания.';
+-- Таблица хранит результаты обработки заданий оценки.
+-- Каждому заданию evaluation_jobs соответствует не более одной записи.
+--
+-- Результат сохраняется целиком в JSONB:
+--   result_payload — JSON-ответ в формате eval.results.v1.json.
+--
+-- Это позволяет сохранять исходную структуру контракта без
+-- необходимости изменять схему БД при добавлении новых полей
+-- в JSON Schema.
 
-COMMENT ON COLUMN evaluation_jobs.max_attempts IS
-    'Максимальное количество попыток обработки; значение по умолчанию — 3.';
+CREATE TABLE evaluation_results (
 
-COMMENT ON COLUMN evaluation_jobs.next_attempt_at IS
-    'Самый ранний момент следующего захвата задания; используется для backoff.';
+    -- Идентификатор задания оценки.
+    -- Одновременно первичный ключ таблицы и внешний ключ
+    -- на evaluation_jobs: один результат на одно задание.
+    -- При удалении задания результат также удаляется.
+    job_id UUID PRIMARY KEY
+        REFERENCES evaluation_jobs(id) ON DELETE CASCADE,
 
-COMMENT ON COLUMN evaluation_jobs.started_at IS
-    'Время начала последней попытки обработки.';
+    -- Полный JSON-результат оценки.
+    -- Соответствует контракту eval.results.v1.json.
+    -- Содержит schemaVersion, jobId, status, recommendation,
+    -- finalReasons, tasksAssessment, questions, responseDraft,
+    -- degraded, errors, usage, model, evaluatorVersion и durationMs.
+    result_payload JSONB NOT NULL,
 
-COMMENT ON COLUMN evaluation_jobs.locked_at IS
-    'Время захвата задания текущим воркером; используется для обнаружения зависших RUNNING-заданий.';
+    -- Время сохранения результата оценки.
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-COMMENT ON COLUMN evaluation_jobs.locked_by IS
-    'Идентификатор экземпляра приложения, захватившего задание.';
-
-COMMENT ON COLUMN evaluation_jobs.last_error IS
-    'Текст последней ошибки обработки без секретов и чувствительных данных.';
-
-COMMENT ON COLUMN evaluation_jobs.completed_at IS
-    'Время успешного завершения; заполнено только для состояния COMPLETED.';
+    -- Результат должен быть JSON-объектом.
+    CONSTRAINT chk_evaluation_results_payload_object
+        CHECK (jsonb_typeof(result_payload) = 'object')
+);
 
 
 -- -----------------------------------------------------------------------------
@@ -945,7 +914,7 @@ CREATE UNIQUE INDEX uq_evaluation_jobs_active_application
 
 
 -- =============================================================================
--- 9. INTAKE_IDEMPOTENCY — ИДЕМПОТЕНТНОСТЬ СОЗДАНИЯ ЗАЯВОК
+-- 10. INTAKE_IDEMPOTENCY — ИДЕМПОТЕНТНОСТЬ СОЗДАНИЯ ЗАЯВОК
 -- =============================================================================
 
 -- Хранит ключи идемпотентности входящих запросов на создание заявки.
@@ -1021,15 +990,8 @@ CREATE INDEX idx_intake_idempotency_application
     ON intake_idempotency (application_id);
 
 
-COMMENT ON TABLE intake_idempotency IS
-    'Ключи идемпотентности запросов на создание заявок.';
-
-COMMENT ON COLUMN intake_idempotency.request_hash IS
-    'Хеш тела исходного запроса для обнаружения повторного использования ключа с другими данными.';
-
-
 -- =============================================================================
--- 10. ЗАВЕРШЕНИЕ МИГРАЦИИ
+-- 11. ЗАВЕРШЕНИЕ МИГРАЦИИ
 -- =============================================================================
 
 -- На этом этапе созданы:
@@ -1042,7 +1004,8 @@ COMMENT ON COLUMN intake_idempotency.request_hash IS
 --   6. channel_cursor
 --   7. outbox
 --   8. evaluation_jobs
---   9. intake_idempotency
+--   9. evaluation_results
+--  10. intake_idempotency
 --
 -- Все таблицы и индексы создаются в рамках одной транзакции Flyway
 -- (для PostgreSQL DDL поддерживает транзакционное выполнение).
