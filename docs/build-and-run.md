@@ -23,6 +23,10 @@
    ```bash
    docker compose up -d
    ```
+   Другие команды docker можно найти в документации к docker.  
+   Управлять докером можно из Intellij Idea -> кнопка-Servises -> Docker.  
+   Для подключения [docker-compose.yaml](../docker-compose.yaml) к Intellij Idea, откройте его и нажмите 
+   кнопку Synchronyze в правом верхнем углу.
 
 **Сам запуск**
 
