@@ -19,16 +19,17 @@
 - задайте `DB_URL` с адресом вашей базы и `DB_USER` / `DB_PASSWORD` в окружении или используйте application-local.yaml
 - переходите к шагу 1
 
-0. Если у вас нет локально установленной СУБД postgreSQL запустите docker-контейнер с postgres 16.1
+0. Скопируйте `.env.example` в `.env`. Если у вас нет локально установленной
+   СУБД PostgreSQL, запустите контейнеры PostgreSQL и NATS:
    ```bash
-   docker compose up -d
+   docker compose up -d postgres nats
    ```
    Другие команды docker можно найти в документации к docker.  
    Управлять докером можно из Intellij Idea -> кнопка-Servises -> Docker.  
    Для подключения [docker-compose.yaml](../docker-compose.yaml) к Intellij Idea, откройте его и нажмите 
    кнопку Synchronyze в правом верхнем углу.
 
-Скопируйте `.env.example` в `.env` и загрузите переменные в окружение перед
+Для запуска приложения на хосте загрузите переменные в окружение перед
 запуском приложения, как описано в [README](../README.md#конфигурация).
 
 **Сам запуск**

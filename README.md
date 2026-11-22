@@ -37,7 +37,7 @@ set +a
 
 | Ключ | Переменная окружения | Значение по умолчанию |
 | --- | --- | --- |
-| `app.db.url` | `DB_URL` | `jdbc:postgresql://localhost:5433/master-bot?currentSchema=db` |
+| `app.db.url` | `DB_URL` | `jdbc:postgresql://localhost:5433/master-bot?currentSchema=db` (в `.env.example` используется `public`) |
 | `app.db.username` | `DB_USER` | `dbuser` |
 | `app.db.password` | `DB_PASSWORD` | пусто |
 | `app.admin.token` | `ADMIN_TOKEN` | пусто |
@@ -62,6 +62,30 @@ set +a
 
 
 ## Проверка запуска
+
+Для запуска всего окружения в Docker достаточно:
+
+```bash
+cp .env.example .env  # если файла ещё нет
+docker compose up --build -d
+docker compose ps
+curl http://localhost:8080/actuator/health
+```
+
+Compose запускает PostgreSQL, NATS с JetStream и приложение. Для контейнера
+приложения адреса базы и NATS задаются внутри сети Compose автоматически;
+`DB_URL` и `NATS_URL` из `.env` используются при запуске приложения на хосте.
+Swagger UI доступен по адресу http://localhost:8080/swagger-ui.html.
+
+```bash
+docker compose logs -f          # логи всех сервисов
+docker compose logs -f app      # только приложение
+docker compose down             # остановить, сохранив данные
+docker compose down -v          # удалить также данные PostgreSQL и JetStream
+```
+
+При изменении `DB_USER` или `DB_PASSWORD` существующий том PostgreSQL не
+переинициализируется: измените учётные данные в базе или сбросьте тома.
 
 При запуске через `./gradlew bootRun` сообщение `Tomcat started on port 8080`
 в JSON-логах означает, что веб-сервер запущен. Gradle может продолжать
