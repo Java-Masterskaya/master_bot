@@ -16,3 +16,63 @@ JetStream и публикуется в чат менеджеров вместе 
 Стек: Java 21, Spring Boot 3, Postgres, Flyway, NATS JetStream; оценщик —
 Python 3.12, FastAPI.
 
+
+## Конфигурация
+
+Настройки `app` задаются переменными окружения; секреты не хранятся в файле
+конфигурации. Для локального запуска скопируйте `.env.example` в `.env`,
+укажите в `.env` секреты (пароль базы и необходимые токены) и другие нужные
+значения, затем загрузите их в окружение shell:
+
+```bash
+cp .env.example .env
+set -a
+source .env
+set +a
+```
+
+Файл `.env` исключён из Git. Значение `DB_PASSWORD` в примере предназначено
+только для локальной базы из `docker-compose.yaml`. Пустые токены допустимы,
+пока соответствующий канал выключен. Для включённого канала токен обязателен.
+
+| Ключ | Переменная окружения | Значение по умолчанию |
+| --- | --- | --- |
+| `app.db.url` | `DB_URL` | `jdbc:postgresql://localhost:5433/master-bot?currentSchema=db` |
+| `app.db.username` | `DB_USER` | `dbuser` |
+| `app.db.password` | `DB_PASSWORD` | пусто |
+| `app.admin.token` | `ADMIN_TOKEN` | пусто |
+| `app.intake.token` | `INTAKE_TOKEN` | пусто |
+| `app.nats.url` | `NATS_URL` | `nats://localhost:4222` |
+| `app.channels.telegram.enabled` | `TELEGRAM_ENABLED` | `false` |
+| `app.channels.telegram.token` | `TELEGRAM_TOKEN` | пусто |
+| `app.channels.telegram.mode` | `TELEGRAM_MODE` | `polling` |
+| `app.channels.yandex360.enabled` | `YANDEX360_ENABLED` | `false` |
+| `app.channels.yandex360.token` | `YANDEX360_TOKEN` | пусто |
+| `app.channels.yandex360.mode` | `YANDEX360_MODE` | `polling` |
+| `app.managers-chat.channel` | `MANAGERS_CHAT_CHANNEL` | `yandex360` |
+| `app.managers-chat.chat-id` | `MANAGERS_CHAT_ID` | пусто |
+| `app.evaluation.enabled` | `EVALUATION_ENABLED` | `false` |
+
+Режим канала: `polling` или `webhook`; реализация каналов появится в отдельных
+задачах. Логи выводятся в JSON; HTTP-ответ содержит сгенерированный
+`X-Correlation-ID`, а логи операции — поле `correlationId`. Фоновые задачи
+стандартных исполнителя и планировщика Spring получают собственный ID при
+каждом запуске. Для самостоятельно созданных потоков используйте
+`CorrelationId.decorate`. Сервер завершает работу в режиме graceful shutdown.
+
+
+## Проверка запуска
+
+При запуске через `./gradlew bootRun` сообщение `Tomcat started on port 8080`
+в JSON-логах означает, что веб-сервер запущен. Gradle может продолжать
+показывать `80% EXECUTING` и `:bootRun`: это нормально, пока приложение работает.
+
+Откройте [проверку состояния](http://localhost:8080/actuator/health) в браузере
+или выполните в другом терминале:
+
+```bash
+curl http://localhost:8080/actuator/health
+# {"status":"UP"}
+```
+
+Для остановки приложения нажмите `Ctrl+C` в терминале, где запущен `bootRun`.
