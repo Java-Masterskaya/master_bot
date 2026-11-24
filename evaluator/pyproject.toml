@@ -23,6 +23,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["vendor/brief-evaluator"]
 
 [tool.ruff]
 extend-exclude = ["vendor"]
