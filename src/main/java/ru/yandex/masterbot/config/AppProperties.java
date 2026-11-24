@@ -3,6 +3,7 @@ package ru.yandex.masterbot.config;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -20,14 +21,14 @@ public record AppProperties(
 
   public record Db(String url, String username, String password) {
     @Override
-    public String toString() {
+    public @NonNull String toString() {
       return "Db[url=" + url + ", username=" + username + ", password=***]";
     }
   }
 
   public record Token(String token) {
     @Override
-    public String toString() {
+    public @NonNull String toString() {
       return "Token[token=***]";
     }
   }
@@ -52,7 +53,7 @@ public record AppProperties(
 
   public record Channel(boolean enabled, String token, Mode mode) {
     @Override
-    public String toString() {
+    public @NonNull String toString() {
       return "Channel[enabled=" + enabled + ", token=***, mode=" + mode + "]";
     }
   }
