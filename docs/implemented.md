@@ -61,21 +61,28 @@
 
 ## Стэйт-машина заявок
 
-- **`ApplicationStatus`** — enum с `canTransitionTo(target)` и `isTerminal()`; 
-- таблица переходов (`NEW → IN_REVIEW → ACCEPTED | REJECTED`) хранится в одном месте — `ALLOWED_TRANSITIONS`.
-- **`Application`** — иммутабельный record-агрегат с каноническим конструктором (валидация инвариантов) 
-и фабриками `create` / `restore`; `changeStatus` возвращает новый экземпляр, 
-увеличивая `version` и дополняя `history`.
+- **`ApplicationStatus`** — enum с `canTransitionTo(target)` и `isTerminal()`;
+  таблица переходов (`NEW → IN_REVIEW → ACCEPTED | REJECTED`) хранится в одном
+  месте — `ALLOWED_TRANSITIONS`.
+- **`Application`** — иммутабельный record-агрегат с каноническим конструктором
+  (валидация инвариантов: `id`, `source`, `status` не `null`; `number > 0`;
+  `version >= 0`; `history` копируется через `List.copyOf`) и фабриками
+  `create(id, number, source)` / `restore(id, number, source, status, version, history)`;
+  `changeStatus` возвращает новый экземпляр, увеличивая `version` и дополняя `history`.
 - **`StatusChange`** — record-факт перехода: `from`, `to`, `actor`, `comment`, `at`.
+  **`actor` обязателен для каждой смены статуса** (не только для терминальных) и
+  проверяется в каноническом конструкторе `StatusChange` (`null`/`blank` → `IllegalArgumentException`).
 - **`IllegalStatusTransitionException`** — доменное исключение при запрещённом переходе.
-- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, NPE, 
-иммутабельность истории.
+- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, NPE,
+  иммутабельность истории, обязательность `actor`. Тесты лежат в том же пакете
+  `com.example.application.domain`, что и продакшн-классы.
 - **Зависимости** — только `java.*`; ни Spring, ни JPA, ни Lombok.
 
 **Сводная таблица перехода статусов**
-| From \ To   | NEW | IN_REVIEW | ACCEPTED | REJECTED |
-|-------------|-----|-----------|----------|----------|
-| **NEW**     | ❌  | ✅        | ❌       | ❌       |
-| **IN_REVIEW** | ❌ | ❌        | ✅       | ✅       |
-| **ACCEPTED**  | ❌ | ❌        | ❌       | ❌       |
-| **REJECTED**  | ❌ | ❌        | ❌       | ❌       |
+
+| From \ To     | NEW | IN_REVIEW | ACCEPTED | REJECTED |
+|---------------|-----|-----------|----------|----------|
+| **NEW**       | ❌  | ✅        | ❌       | ❌       |
+| **IN_REVIEW** | ❌  | ❌        | ✅       | ✅       |
+| **ACCEPTED**  | ❌  | ❌        | ❌       | ❌       |
+| **REJECTED**  | ❌  | ❌        | ❌       | ❌       |

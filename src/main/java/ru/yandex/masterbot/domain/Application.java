@@ -49,8 +49,7 @@ public record Application(
   }
 
   /** Создать новую заявку в статусе {@code NEW} с версией 0 и пустой историей. */
-  public static Application create(UUID id, long number, String source, Instant createdAt) {
-    Objects.requireNonNull(createdAt, "createdAt must not be null");
+  public static Application create(UUID id, long number, String source) {
     return new Application(id, number, source, ApplicationStatus.NEW, 0L, List.of());
   }
 
@@ -84,9 +83,6 @@ public record Application(
 
     if (!this.status.canTransitionTo(target)) {
       throw new IllegalStatusTransitionException(this.status, target);
-    }
-    if (target.isTerminal() && (actor == null || actor.isBlank())) {
-      throw new IllegalArgumentException("actor is required for terminal transition to " + target);
     }
 
     StatusChange change = new StatusChange(this.status, target, actor, comment, at);

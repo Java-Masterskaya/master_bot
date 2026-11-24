@@ -19,8 +19,13 @@ import java.util.Objects;
  */
 public record StatusChange(
     ApplicationStatus from, ApplicationStatus to, String actor, String comment, Instant at) {
+
   public StatusChange {
+    Objects.requireNonNull(from, "from status must not be null");
     Objects.requireNonNull(to, "to status must not be null");
     Objects.requireNonNull(at, "timestamp must not be null");
+    if (actor == null || actor.isBlank()) {
+      throw new IllegalArgumentException("actor is required for every status change");
+    }
   }
 }

@@ -1,4 +1,4 @@
-package ru.yandex.masterbot.application;
+package ru.yandex.masterbot.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -7,10 +7,6 @@ import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import ru.yandex.masterbot.domain.Application;
-import ru.yandex.masterbot.domain.ApplicationStatus;
-import ru.yandex.masterbot.domain.IllegalStatusTransitionException;
-import ru.yandex.masterbot.domain.StatusChange;
 
 class ApplicationTest {
 
@@ -18,7 +14,7 @@ class ApplicationTest {
   private static final UUID APP_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
 
   private Application newApplication() {
-    return Application.create(APP_ID, 1001L, "TELEMOST", NOW);
+    return Application.create(APP_ID, 1001L, "TELEMOST");
   }
 
   @Test
@@ -114,5 +110,19 @@ class ApplicationTest {
                     new StatusChange(
                         ApplicationStatus.NEW, ApplicationStatus.ACCEPTED, "x", null, NOW)))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  @DisplayName("actor обязателен для любой смены статуса")
+  void changeStatus_requiresActor() {
+    Application app = newApplication();
+
+    assertThatThrownBy(() -> app.changeStatus(ApplicationStatus.IN_REVIEW, null, null, NOW))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("actor");
+
+    assertThatThrownBy(() -> app.changeStatus(ApplicationStatus.IN_REVIEW, "   ", null, NOW))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("actor");
   }
 }
