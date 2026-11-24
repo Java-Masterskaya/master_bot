@@ -18,3 +18,10 @@ services:
       timeout: 5s
       interval: 5s
       retries: 10
+
+  evaluator:
+    build: ./evaluator
+    environment:
+      KODIK_API_KEY: ${KODIK_API_KEY:-}
+    ports:
+      - "127.0.0.1:8000:8000"
