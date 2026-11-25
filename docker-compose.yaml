@@ -1,5 +1,5 @@
 services:
-  postgres:
+  db:
     image: postgres:16
     environment:
       POSTGRES_DB: master-bot
@@ -10,21 +10,21 @@ services:
     volumes:
       - master_bot_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      test: [ "CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER" ]
       interval: 5s
       timeout: 5s
       retries: 10
 
   nats:
     image: nats:2-alpine
-    command: ["-js", "-sd", "/data", "-m", "8222"]
+    command: [ "-js", "-sd", "/data", "-m", "8222" ]
     ports:
-      - "4222:4222"
-      - "8222:8222"
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
     volumes:
       - nats_data:/data
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8222/healthz?js-enabled-only=true"]
+      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8222/healthz?js-enabled-only=true" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -32,7 +32,7 @@ services:
   app:
     build: .
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/master-bot?currentSchema=public
+      DB_URL: jdbc:postgresql://db:5432/master-bot?currentSchema=db
       DB_USER: ${DB_USER:-dbuser}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       NATS_URL: nats://nats:4222
@@ -50,12 +50,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
       nats:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8080/actuator/health" ]
       interval: 10s
       timeout: 5s
       retries: 12
