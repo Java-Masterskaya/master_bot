@@ -65,9 +65,22 @@ JetStream и публикуется в чат менеджеров вместе 
 
 ### CI/CD (GitHub Actions)
 
-- Настроен пайплайн `CI`, который запускается на каждый `push` и `pull_request`.
-- Выполняет полный цикл проверок: компиляция → Spotless → Checkstyle → тесты → ArchUnit.
-- Отчёты (Checkstyle, тесты) генерируются в `build/reports/` и доступны локально и как артефакты в CI.
+- Настроен workflow `CI` (`.github/workflows/ci.yml`), который запускается на **push в `main`** и на **pull
+  request**.
+- Основной job `build`:
+    - **JDK 21 (Temurin)** через `actions/setup-java@v5` и **кэш Gradle** (`cache: gradle`) — повторные
+      прогоны быстрее.
+    - **`./gradlew clean check`** — полный цикл проверок (компиляция, Spotless, Checkstyle, тесты, ArchUnit).
+    - **Сборка Docker-образа без публикации** — `docker build` при наличии `Dockerfile` (в registry не
+      пушится).
+    - **Testcontainers** работают «из коробки»: на `ubuntu-latest` есть Docker Engine.
+- Заготовка job `evaluator` — запускается **только если есть каталог `evaluator/`**, ставит Python 3.12 +
+  `pytest` и прогоняет `pytest evaluator/ -v`.
+- **Обязательный чек `build`** включён в branch protection для `main` — PR с падающим тестом не мёржится.
+- **Секретов в workflow нет**; прогон на пустом проекте укладывается в **< 5 минут** (за счёт кэша
+  Gradle/JDK).
+- Отчёты (Checkstyle, тесты) генерируются в `build/reports/` и доступны локально; при необходимости их можно
+  публиковать как артефакты CI.
 
 ### Конфигурация и логи
 
@@ -130,7 +143,7 @@ JetStream и публикуется в чат менеджеров вместе 
 - Сообщение, записанное в JetStream, успешно читается после перезапуска NATS.
 - `docker compose down -v` удалиляет тестовые контейнеры и тома.
 
-## Стэйт-машина заявок
+### Стэйт-машина заявок
 
 - **`ApplicationStatus`** — enum с `canTransitionTo(target)` и `isTerminal()`;
   таблица переходов (`NEW → IN_REVIEW → ACCEPTED | REJECTED`) хранится в одном
