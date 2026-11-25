@@ -61,7 +61,7 @@ JetStream и публикуется в чат менеджеров вместе 
 ### Тестирование
 
 - **Flyway**: миграции БД управляются через Flyway.
-- **JUnit 5 + Spring Boot Test**: тесты используют H2 (H2 будет убран в DB-01).
+- **JUnit 5 + Spring Boot Test**: тесты используют Testcontainers.
 
 ### CI/CD (GitHub Actions)
 
@@ -129,3 +129,31 @@ JetStream и публикуется в чат менеджеров вместе 
   с настройками из `.env.example`.
 - Сообщение, записанное в JetStream, успешно читается после перезапуска NATS.
 - `docker compose down -v` удалиляет тестовые контейнеры и тома.
+
+## Стэйт-машина заявок
+
+- **`ApplicationStatus`** — enum с `canTransitionTo(target)` и `isTerminal()`;
+  таблица переходов (`NEW → IN_REVIEW → ACCEPTED | REJECTED`) хранится в одном
+  месте — `ALLOWED_TRANSITIONS`.
+- **`Application`** — иммутабельный record-агрегат с каноническим конструктором (валидация инвариантов: `id`,
+  `source`, `status` не `null`; `number > 0`;
+  `version >= 0`; `history` копируется через `List.copyOf`) и фабриками
+  `create(id, number, source)` / `restore(id, number, source, status, version, history)`;
+  `changeStatus` возвращает новый экземпляр, увеличивая `version` и дополняя `history`.
+- **`StatusChange`** — record-факт перехода: `from`, `to`, `actor`, `comment`, `at`. **`actor` обязателен для
+  каждой смены статуса** (не только для терминальных) и
+  проверяется в каноническом конструкторе `StatusChange` (`null`/`blank` → `IllegalArgumentException`).
+- **`IllegalStatusTransitionException`** — доменное исключение при запрещённом переходе.
+- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, NPE,
+  иммутабельность истории, обязательность `actor`. Тесты лежат в том же пакете
+  `com.example.application.domain`, что и продакшн-классы.
+- **Зависимости** — только `java.*`; ни Spring, ни JPA, ни Lombok.
+
+**Сводная таблица перехода статусов**
+
+| From \ To     | NEW | IN_REVIEW | ACCEPTED | REJECTED |
+|---------------|-----|-----------|----------|----------|
+| **NEW**       | ❌  | ✅        | ❌       | ❌       |
+| **IN_REVIEW** | ❌  | ❌        | ✅       | ✅       |
+| **ACCEPTED**  | ❌  | ❌        | ❌       | ❌       |
+| **REJECTED**  | ❌  | ❌        | ❌       | ❌       
