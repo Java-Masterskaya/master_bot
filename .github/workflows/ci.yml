@@ -1,7 +1,8 @@
 name: CI
+
 on:
   push:
-    branches: [ "**" ]
+    branches: [ "main" ]
   pull_request:
 
 jobs:
@@ -9,10 +10,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
           cache: gradle
+
       - name: Build and check
         run: ./gradlew clean check
+
+      - name: Build Docker image (no push)
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t ci-local-check:${{ github.sha }} .
+          else
+            echo "Dockerfile not found, skipping Docker build."
+          fi
+
+  evaluator:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check evaluator directory
+        id: check
+        run: |
+          if [ -d "evaluator" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.check.outputs.exists == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        if: steps.check.outputs.exists == 'true'
+        run: pip install pytest
+
+      - name: Run evaluator tests
+        if: steps.check.outputs.exists == 'true'
+        run: pytest evaluator/ -v
