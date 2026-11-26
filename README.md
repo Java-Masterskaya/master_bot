@@ -1,21 +1,46 @@
-# master_bot
+# Мастер-бот (master_bot)
 
-Сервис приёма входящих заявок на проекты для команды аккаунт-менеджеров.
+**Сервис приёма входящих заявок на проекты для команды аккаунт-менеджеров.**
+
 Заявки приходят с лендинга и через ботов в мессенджерах (Telegram, Яндекс 360),
 каждая уходит на ИИ-оценку в отдельный Python-сервис через очередь NATS
 JetStream и публикуется в чат менеджеров вместе с рекомендацией.
 
+## Технологический стек
+
+| Компонент                             | Технология                                                          | Версия        | Применение                                                                                                |
+|---------------------------------------|---------------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------|
+| **Язык разработки основного сервиса** | Java                                                                | 21            | Среда выполнения приложения; виртуальные потоки, Records и другие современные возможности языка           |
+| **Сборщик проекта**                   | Gradle                                                              | 9.9.1         | Автоматизация сборки, тестирования и упаковки кода                                                        |
+| **Основной бэкенд-фреймворк**         | Spring Boot                                                         | 3.5.16        | Основной фреймворк бизнес-приложения: DI, веб-контейнер, автоконфигурация                                 |
+| **База данных**                       | PostgreSQL                                                          | 16.x          | Основная реляционная БД для хранения бизнес-данных                                                        |
+| **Миграции БД**                       | Flyway                                                              | 11.7.2        | Управление версиями схемы БД, автоматическое выполнение миграционных скриптов                             |
+| **Документация API**                  | springdoc-openapi                                                   | 2.9.1         | Автогенерация OpenAPI-эндпоинтов                                                                          |
+| **Брокер сообщений**                  | NATS + JetStream                                                    | 2.x.x         | Асинхронная передача сообщений, событийно-ориентированное взаимодействие, персистентная обработка потоков |
+| **Сервис-оценщик с ИИ**               | [brief-evaluator](https://github.com/Al-brif-team1/brief-evaluator) | -             | Оценка проектного брифа                                                                                   |
+| **HTTP API сервиса-оценщика**         | FastAPI                                                             | Python 3.12   | Асинхронные эндпоинты и автодокументация                                                                  |
+| **Инструмент запуска**                | Docker, Docker Compose                                              | 20.10 и новее | Развертывание и запуск на сервере                                                                         |
+
+---
+
+## Артефакты проекта разработки
+
 - [Техническое задание](docs/TZ.md)
 - [Доска задач](https://github.com/orgs/Java-Masterskaya/projects/13)
-- [Структура проекта](docs/project-structure.md)
-- [Схема базы данных](docs/database-map.md)
-- [Что уже реализовано](docs/implemented.md)
-- [Как собрать и запустить](docs/build-and-run.md)
+
+---
+
+## Инструкции для разработчиков
+
+- [Конфигурация сборка и запуск](docs/build-and-run.md)
 - [Что сделать перед коммитом](docs/before-committing.md)
 
-Стек: Java 21, Spring Boot 3, Postgres, Flyway, NATS JetStream; оценщик —
-Python 3.12, FastAPI.
+---
 
+## Описание сервиса
+
+- [Структура проекта](docs/project-structure.md)
+- [Схема базы данных](docs/database-map.md)
 
 ## Python-оценщик
 
@@ -25,6 +50,7 @@ Python 3.12, FastAPI.
 
 ```bash
 git submodule update --init --recursive
+cp -n .env.example .env
 docker compose up --build --wait evaluator
 curl http://localhost:8000/healthz
 # {"status":"ok"}
@@ -43,62 +69,132 @@ python -m ruff check
 python -m pytest
 ```
 
-## Конфигурация
 
-Настройки `app` задаются переменными окружения; секреты не хранятся в файле
-конфигурации. Для локального запуска скопируйте `.env.example` в `.env`,
-укажите в `.env` секреты (пароль базы и необходимые токены) и другие нужные
-значения, затем загрузите их в окружение shell:
+---
 
-```bash
-cp .env.example .env
-set -a
-source .env
-set +a
-```
+## Что уже реализовано и настроено
 
-Файл `.env` исключён из Git. Значение `DB_PASSWORD` в примере предназначено
-только для локальной базы из `docker-compose.yaml`. Пустые токены допустимы,
-пока соответствующий канал выключен. Для включённого канала токен обязателен.
+### Качество кода и стиль
 
-| Ключ | Переменная окружения | Значение по умолчанию |
-| --- | --- | --- |
-| `app.db.url` | `DB_URL` | `jdbc:postgresql://localhost:5433/master-bot?currentSchema=db` |
-| `app.db.username` | `DB_USER` | `dbuser` |
-| `app.db.password` | `DB_PASSWORD` | пусто |
-| `app.admin.token` | `ADMIN_TOKEN` | пусто |
-| `app.intake.token` | `INTAKE_TOKEN` | пусто |
-| `app.nats.url` | `NATS_URL` | `nats://localhost:4222` |
-| `app.channels.telegram.enabled` | `TELEGRAM_ENABLED` | `false` |
-| `app.channels.telegram.token` | `TELEGRAM_TOKEN` | пусто |
-| `app.channels.telegram.mode` | `TELEGRAM_MODE` | `polling` |
-| `app.channels.yandex360.enabled` | `YANDEX360_ENABLED` | `false` |
-| `app.channels.yandex360.token` | `YANDEX360_TOKEN` | пусто |
-| `app.channels.yandex360.mode` | `YANDEX360_MODE` | `polling` |
-| `app.managers-chat.channel` | `MANAGERS_CHAT_CHANNEL` | `yandex360` |
-| `app.managers-chat.chat-id` | `MANAGERS_CHAT_ID` | пусто |
-| `app.evaluation.enabled` | `EVALUATION_ENABLED` | `false` |
+- **Spotless**: автоматическое форматирование кода. Запускается при сборке (`./gradlew spotlessCheck`)
+  и может автоматически исправлять стиль (`./gradlew spotlessApply`).
+- **Checkstyle**: статическая проверка стиля кода по правилам из `google-checkstyle`.
 
-Режим канала: `polling` или `webhook`; реализация каналов появится в отдельных
-задачах. Логи выводятся в JSON; HTTP-ответ содержит сгенерированный
-`X-Correlation-ID`, а логи операции — поле `correlationId`. Фоновые задачи
-стандартных исполнителя и планировщика Spring получают собственный ID при
-каждом запуске. Для самостоятельно созданных потоков используйте
-`CorrelationId.decorate`. Сервер завершает работу в режиме graceful shutdown.
+### Архитектура и границы слоёв
 
+- **ArchUnit**: тесты, которые не дают нарушить границы слоёв (например, контроллеры не могут напрямую
+  импортировать репозитории).
+  Нарушение правил сразу приводит к падению сборки.
 
-## Проверка запуска
+### Тестирование
 
-При запуске через `./gradlew bootRun` сообщение `Tomcat started on port 8080`
-в JSON-логах означает, что веб-сервер запущен. Gradle может продолжать
-показывать `80% EXECUTING` и `:bootRun`: это нормально, пока приложение работает.
+- **Flyway**: миграции БД управляются через Flyway.
+- **JUnit 5 + Spring Boot Test**: тесты используют Testcontainers.
 
-Откройте [проверку состояния](http://localhost:8080/actuator/health) в браузере
-или выполните в другом терминале:
+### CI/CD (GitHub Actions)
 
-```bash
-curl http://localhost:8080/actuator/health
-# {"status":"UP"}
-```
+- Настроен workflow `CI` (`.github/workflows/ci.yml`), который запускается на **push в `main`** и на **pull
+  request**.
+- Основной job `build`:
+    - **JDK 21 (Temurin)** через `actions/setup-java@v5` и **кэш Gradle** (`cache: gradle`) — повторные
+      прогоны быстрее.
+    - **`./gradlew clean check`** — полный цикл проверок (компиляция, Spotless, Checkstyle, тесты, ArchUnit).
+    - **Сборка Docker-образа без публикации** — `docker build` при наличии `Dockerfile` (в registry не
+      пушится).
+    - **Testcontainers** работают «из коробки»: на `ubuntu-latest` есть Docker Engine.
+- Заготовка job `evaluator` — запускается **только если есть каталог `evaluator/`**, ставит Python 3.12 +
+  `pytest` и прогоняет `pytest evaluator/ -v`.
+- **Обязательный чек `build`** включён в branch protection для `main` — PR с падающим тестом не мёржится.
+- **Секретов в workflow нет**; прогон на пустом проекте укладывается в **< 5 минут** (за счёт кэша
+  Gradle/JDK).
+- Отчёты (Checkstyle, тесты) генерируются в `build/reports/` и доступны локально; при необходимости их можно
+  публиковать как артефакты CI.
 
-Для остановки приложения нажмите `Ctrl+C` в терминале, где запущен `bootRun`.
+### Конфигурация и логи
+
+- Добавлена типизированная конфигурация с настройкой через переменные окружения.
+- Добавлена проверка токенов включённых каналов и маскирование секретов.
+- Настроены JSON-логи, `correlation ID` для HTTP и фоновых задач, `graceful shutdown`.
+- Добавлены `.env.example` и описание настроек и запуска в README.
+- Тестовые секреты отсутствуют в стартовых логах.
+- Тесты проверяют валидацию токенов, маскирование секретов и работу `correlation ID`.
+
+### Миграция базы данных V1
+
+Подготовлена начальная миграция `V1__init_schema.sql` для PostgreSQL с использованием Flyway.
+
+Миграция создаёт последовательность `application_number_seq` и следующие таблицы:
+
+- `applications` — заявки и данные брифа;
+- `application_status_history` — историю статусов заявок;
+- `dialog_states` — состояния диалогов;
+- `channel_inbox` — входящие события каналов с защитой от повторной обработки;
+- `channel_cursor` — позицию последнего полученного обновления по каждому каналу;
+- `outbox` — очередь исходящих сообщений (Transactional Outbox);
+- `evaluation_jobs` — очередь фоновых задач оценки заявок;
+- `evaluation_results` — результаты оценки заявок (связь один к одному с `evaluation_jobs`);
+- `intake_idempotency` — защиту от повторной обработки запросов на создание заявок.
+
+Добавлены внешние ключи, ограничения целостности (`CHECK`, `UNIQUE`, `PRIMARY KEY`),
+индексы (включая частичные и уникальный частичный индекс на активные задания оценки),
+последовательность номеров заявок, а также комментарии к таблицам и колонкам.
+
+Для `evaluation_jobs` предусмотрены блокировки задач (`locked_at`, `locked_by`),
+ограничение числа попыток (`max_attempts`, `attempts <= max_attempts`),
+повторные запуски через `next_attempt_at` и статус `RETRY`, а также восстановление зависших задач
+с использованием частичного индекса `idx_evaluation_jobs_running_locked_at` по `locked_at`
+для записей в статусе `RUNNING`.
+
+### Интеграционные тесты с Testcontainers
+
+Настроена интеграционная тестовая среда на базе **Testcontainers**
+с использованием PostgreSQL (`postgres:16-alpine`).
+
+- Контейнер PostgreSQL запускается один раз на время работы тестового JVM.
+- Подключение к PostgreSQL автоматически настраивается Spring через `@ServiceConnection`.
+- Для тестов используется профиль `test`.
+- Flyway включён: миграции выполняются при запуске тестового контекста.
+- Hibernate работает в режиме `ddl-auto: validate`, проверяя соответствие JPA-сущностей реальной схеме БД.
+
+Это позволяет запускать интеграционные тесты на PostgreSQL с той же схемой, что используется приложением,
+без зависимости от локально установленной базы данных.
+
+### Docker compose для разработки
+
+- В `docker-compose.yaml` добавлены PostgreSQL, NATS и приложение. Для каждого настроен healthcheck;
+  приложение ждёт готовности PostgreSQL и NATS. Данные JetStream сохраняются на диске.
+- Добавлен multi-stage Dockerfile: сборка приложения выполняется в JDK, запуск — в JRE.
+- Проверено, что .env.example содержит настройки `INF-02`, а .env исключён из Git.
+- В Compose добавлена закомментированная заготовка сервиса evaluator.
+- Изолированное окружение запускается через `docker compose up --build -d --wait`
+  с настройками из `.env.example`.
+- Сообщение, записанное в JetStream, успешно читается после перезапуска NATS.
+- `docker compose down -v` удалиляет тестовые контейнеры и тома.
+
+### Стэйт-машина заявок
+
+- **`ApplicationStatus`** — enum с `canTransitionTo(target)` и `isTerminal()`;
+  таблица переходов (`NEW → IN_REVIEW → ACCEPTED | REJECTED`) хранится в одном
+  месте — `ALLOWED_TRANSITIONS`.
+- **`Application`** — иммутабельный record-агрегат с каноническим конструктором (валидация инвариантов: `id`,
+  `source`, `status` не `null`; `number > 0`;
+  `version >= 0`; `history` копируется через `List.copyOf`) и фабриками
+  `create(id, number, source)` / `restore(id, number, source, status, version, history)`;
+  `changeStatus` возвращает новый экземпляр, увеличивая `version` и дополняя `history`.
+- **`StatusChange`** — record-факт перехода: `from`, `to`, `actor`, `comment`, `at`. **`actor` обязателен для
+  каждой смены статуса** (не только для терминальных) и
+  проверяется в каноническом конструкторе `StatusChange` (`null`/`blank` → `IllegalArgumentException`).
+- **`IllegalStatusTransitionException`** — доменное исключение при запрещённом переходе.
+- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, NPE,
+  иммутабельность истории, обязательность `actor`. Тесты лежат в том же пакете
+  `com.example.application.domain`, что и продакшн-классы.
+- **Зависимости** — только `java.*`; ни Spring, ни JPA, ни Lombok.
+
+**Сводная таблица перехода статусов**
+
+| From \ To     | NEW | IN_REVIEW | ACCEPTED | REJECTED |
+|---------------|-----|-----------|----------|----------|
+| **NEW**       | ❌  | ✅        | ❌       | ❌       |
+| **IN_REVIEW** | ❌  | ❌        | ✅       | ✅       |
+| **ACCEPTED**  | ❌  | ❌        | ❌       | ❌       |
+| **REJECTED**  | ❌  | ❌        | ❌       | ❌       

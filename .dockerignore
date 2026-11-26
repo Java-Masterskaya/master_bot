@@ -1,0 +1,8 @@
+.git
+.gradle
+.env
+.env.*
+build
+out
+.idea
+2Alex1531_docs

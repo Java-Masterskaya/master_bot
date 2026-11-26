@@ -1,23 +1,65 @@
-volumes:
-  master_bot_db_data:
-
 services:
-
   db:
-    image: postgres:16.1
+    image: postgres:16
+    environment:
+      POSTGRES_DB: master-bot
+      POSTGRES_USER: ${DB_USER:-dbuser}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
     ports:
       - "5433:5432"
-    environment:
-      - POSTGRES_DB=master-bot
-      - POSTGRES_USER=dbuser
-      - POSTGRES_PASSWORD=12345
     volumes:
       - master_bot_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
-      timeout: 5s
+      test: [ "CMD-SHELL", "pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER" ]
       interval: 5s
+      timeout: 5s
       retries: 10
+
+  nats:
+    image: nats:2-alpine
+    command: [ "-js", "-sd", "/data", "-m", "8222" ]
+    ports:
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8222/healthz?js-enabled-only=true" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/master-bot?currentSchema=db
+      DB_USER: ${DB_USER:-dbuser}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      NATS_URL: nats://nats:4222
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      INTAKE_TOKEN: ${INTAKE_TOKEN:-}
+      TELEGRAM_ENABLED: ${TELEGRAM_ENABLED:-false}
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      TELEGRAM_MODE: ${TELEGRAM_MODE:-polling}
+      YANDEX360_ENABLED: ${YANDEX360_ENABLED:-false}
+      YANDEX360_TOKEN: ${YANDEX360_TOKEN:-}
+      YANDEX360_MODE: ${YANDEX360_MODE:-polling}
+      MANAGERS_CHAT_CHANNEL: ${MANAGERS_CHAT_CHANNEL:-yandex360}
+      MANAGERS_CHAT_ID: ${MANAGERS_CHAT_ID:-}
+      EVALUATION_ENABLED: ${EVALUATION_ENABLED:-false}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-fsS", "http://localhost:8080/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
 
   evaluator:
     build: ./evaluator
@@ -25,3 +67,7 @@ services:
       KODIK_API_KEY: ${KODIK_API_KEY:-}
     ports:
       - "127.0.0.1:8000:8000"
+
+volumes:
+  master_bot_db_data:
+  nats_data:
