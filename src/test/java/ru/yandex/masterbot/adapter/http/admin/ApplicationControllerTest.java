@@ -10,14 +10,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.masterbot.adapter.http.error.GlobalExceptionHandler;
 import ru.yandex.masterbot.config.SecurityConfig;
 
-/** HTTP-тесты административного контроллера заявок. */
 @WebMvcTest(ApplicationController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@TestPropertySource(
+    properties = {"app.admin.token=admin-secret-token", "app.intake.token=intake-secret-token"})
 class ApplicationControllerTest {
+
+  private static final String ADMIN_TOKEN = "admin-secret-token";
 
   @Autowired private MockMvc mockMvc;
 
@@ -26,6 +30,7 @@ class ApplicationControllerTest {
     mockMvc
         .perform(
             get("/api/v1/applications")
+                .header("Authorization", "Bearer " + ADMIN_TOKEN)
                 .queryParam("status", "IN_REVIEW")
                 .queryParam("source", "LANDING")
                 .queryParam("recommendation", "ACCEPT")
@@ -43,6 +48,7 @@ class ApplicationControllerTest {
     mockMvc
         .perform(
             post("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000/transitions")
+                .header("Authorization", "Bearer " + ADMIN_TOKEN)
                 .header("X-Actor", "manager")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
@@ -60,6 +66,7 @@ class ApplicationControllerTest {
     mockMvc
         .perform(
             post("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000/transitions")
+                .header("Authorization", "Bearer " + ADMIN_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
@@ -77,14 +84,18 @@ class ApplicationControllerTest {
   @Test
   void restartEvaluationReturnsNotImplemented() throws Exception {
     mockMvc
-        .perform(post("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000/evaluations"))
+        .perform(
+            post("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000/evaluations")
+                .header("Authorization", "Bearer " + ADMIN_TOKEN))
         .andExpect(status().isNotImplemented());
   }
 
   @Test
   void getApplicationReturnsNotImplemented() throws Exception {
     mockMvc
-        .perform(get("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000"))
+        .perform(
+            get("/api/v1/applications/550e8400-e29b-41d4-a716-446655440000")
+                .header("Authorization", "Bearer " + ADMIN_TOKEN))
         .andExpect(status().isNotImplemented());
   }
 }
