@@ -34,6 +34,7 @@ JetStream и публикуется в чат менеджеров вместе 
 
 - [Конфигурация сборка и запуск](docs/build-and-run.md)
 - [Что сделать перед коммитом](docs/before-committing.md)
+- [Как сделать REBASE](docs/rebase-instruction.md)
 
 ---
 
