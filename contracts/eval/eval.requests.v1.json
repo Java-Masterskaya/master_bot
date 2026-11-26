@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masterbot.yandex/contracts/eval/eval.requests.v1.json",
+  "title": "EvalRequest",
+  "description": "Запрос на оценку заявки. Публикуется Java-сервисом в стрим EVAL, subjects eval.requests.v1. Nats-Msg-Id = jobId.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "jobId", "applicationId", "text"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Версия контракта. Меняется только при breaking changes."
+    },
+    "jobId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID задания оценки. Используется как Nast-Msg-Id для дедупликации публикации."
+    },
+    "applicationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID заявки, к которой относится оценка."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100000,
+      "description": "Текст брифа заявки, передаваемый Python-оценщику как единый промпт контекст."
+    }
+  }
+}

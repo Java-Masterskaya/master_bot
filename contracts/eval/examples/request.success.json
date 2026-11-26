@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1.0",
+  "jobId": "6f1c2b8a-1a2b-4c3d-9e0f-1a2b3c4d5e6f",
+  "applicationId": "550e8400-e29b-41d4-a716-446655440000",
+  "text": "Название: CRM для отдела продаж\nЗаказчик: Яндекс\nОписание: нужна CRM для автоматизации отдела продаж.\nСроки: 3 месяца\nСтек: Java, Spring Boot, PostgreSQL"
+}

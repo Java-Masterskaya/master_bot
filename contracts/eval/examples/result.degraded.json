@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "jobId": "7a2d3c9b-2b3c-4d4e-0f1a-2b3c4d5e6f70",
+  "status": "DONE",
+  "recommendation": "clarify",
+  "finalReasons": ["Основная модель недоступна, использованы эвристики"],
+  "tasksAssessment": [
+    { "task": "CRM для отдела продаж", "category": "clarify", "reason": "Мало данных для оценки" }
+  ],
+  "questions": ["Уточните бюджет и сроки"],
+  "responseDraft": null,
+  "degraded": true,
+  "errors": [],
+  "usage": { "promptTokens": 0, "completionTokens": 0 },
+  "model": "heuristic-v1",
+  "evaluatorVersion": "1.0.0-degraded",
+  "durationMs": 120
+}

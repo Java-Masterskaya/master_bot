@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "jobId": "8b3e4d0c-3c4d-4e5f-1a2b-3c4d5e6f7081",
+  "status": "FAILED",
+  "recommendation": null,
+  "finalReasons": [],
+  "tasksAssessment": [],
+  "questions": [],
+  "responseDraft": null,
+  "degraded": false,
+  "errors": [
+    { "code": "LLM_TIMEOUT", "message": "LLM response timed out after 120s" }
+  ],
+  "usage": { "promptTokens": 0, "completionTokens": 0 },
+  "model": "gpt-4o-mini",
+  "evaluatorVersion": "1.0.0",
+  "durationMs": 120500
+}

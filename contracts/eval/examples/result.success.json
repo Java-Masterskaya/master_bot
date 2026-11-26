@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "jobId": "6f1c2b8a-1a2b-4c3d-9e0f-1a2b3c4d5e6f",
+  "status": "DONE",
+  "recommendation": "accept",
+  "finalReasons": [
+    "Описание содержит измеримую цель и сроки",
+    "Стек соответствует компетенциям команды"
+  ],
+  "tasksAssessment": [
+    { "task": "CRM для отдела продаж", "category": "accept", "reason": "Ясная бизнес-цель" },
+    { "task": "Интеграция с 1С", "category": "clarify", "reason": "Не указан протокол обмена" }
+  ],
+  "questions": ["Какая версия 1С используется?"],
+  "responseDraft": "Спасибо за заявку! Уточните, пожалуйста, версию 1С.",
+  "degraded": false,
+  "errors": [],
+  "usage": { "promptTokens": 812, "completionTokens": 214 },
+  "model": "gpt-4o-mini",
+  "evaluatorVersion": "1.0.0",
+  "durationMs": 3480
+}
