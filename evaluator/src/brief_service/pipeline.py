@@ -17,10 +17,20 @@ from src.modules.question_generation import QuestionGenerationModule
 from src.modules.response_generation import ResponseGenerationModule
 from src.modules.structuring import StructuringModule
 
-from brief_service.evaluation_contract import EvaluationRequest, EvaluationResult
+from brief_service.evaluation_contract import (
+    EvaluationError,
+    EvaluationRequest,
+    EvaluationResult,
+)
 
 logger = logging.getLogger(__name__)
 MODEL = "openai/gpt-4o-mini"
+
+
+def record_failure(errors, code, error):
+    failure = EvaluationError(code=code, message=type(error).__name__)
+    errors.append(failure)
+    logger.warning("Evaluation failed in %s: %s", failure.code, failure.message)
 
 
 class EvaluationTokenCounter(TokenCounterCallback):
@@ -69,8 +79,7 @@ class StructuredModelWithFallback:
                         return response
                     return schema.model_validate(response)
                 except Exception as error:
-                    errors.append(f"{schema.__name__}: {type(error).__name__}")
-                    logger.warning("Evaluation model call failed: %s", errors[-1])
+                    record_failure(errors, schema.__name__, error)
                     return fallback
 
         return Invocation()
@@ -81,13 +90,10 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
     counter = EvaluationTokenCounter()
     errors = []
     context = ProjectContext(input_text=request.text)
-    status = "DONE"
     try:
         llm = llm_factory(counter)
     except Exception as error:
-        errors.append(f"Model initialization: {type(error).__name__}")
-        logger.error("Evaluation model initialization failed: %s", type(error).__name__)
-        status = "FAILED"
+        record_failure(errors, "model_initialization", error)
     else:
         stages = (
             (StructuringModule, StructuringResponse()),
@@ -107,8 +113,7 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
                     context
                 )
             except Exception as error:
-                errors.append(f"{module.__name__}: {type(error).__name__}")
-                logger.warning("Evaluation stage failed: %s", errors[-1])
+                record_failure(errors, module.__name__, error)
                 if module is StructuringModule:
                     context.structure = fallback.model_dump()
             finally:
@@ -118,15 +123,18 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
                     perf_counter() - stage_start,
                 )
 
+    failed = bool(errors)
     return EvaluationResult(
         jobId=request.jobId,
-        status=status,
-        recommendation=context.recommendation or "expertise",
-        finalReasons=context.final_reasons,
-        tasksAssessment=context.tasks_assessment or [],
-        questions=context.questions,
-        responseDraft=context.response_draft or "",
-        degraded=bool(errors),
+        status="FAILED" if failed else "DONE",
+        recommendation=None if failed else context.recommendation or "expertise",
+        finalReasons=[] if failed else [reason for reason in context.final_reasons if reason],
+        tasksAssessment=[
+            item for item in context.tasks_assessment or [] if item["task"] and item["reason"]
+        ],
+        questions=[question for question in context.questions if question],
+        responseDraft=None if failed else context.response_draft or None,
+        degraded=failed,
         errors=errors,
         usage={
             "promptTokens": counter.total_prompt_tokens,

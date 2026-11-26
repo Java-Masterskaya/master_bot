@@ -1,9 +1,10 @@
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 Recommendation = Literal["accept", "reject", "clarify", "simplify", "expertise"]
+NonEmptyText = Annotated[str, Field(min_length=1)]
 
 
 class ContractModel(BaseModel):
@@ -11,16 +12,21 @@ class ContractModel(BaseModel):
 
 
 class EvaluationRequest(ContractModel):
-    schemaVersion: Literal[1] = 1
+    schemaVersion: Literal["1.0"]
     jobId: UUID
     applicationId: UUID
-    text: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=100_000)
 
 
 class TaskAssessment(ContractModel):
-    task: str
+    task: NonEmptyText
     category: Recommendation
-    reason: str
+    reason: NonEmptyText
+
+
+class EvaluationError(ContractModel):
+    code: NonEmptyText
+    message: NonEmptyText
 
 
 class Usage(ContractModel):
@@ -29,16 +35,16 @@ class Usage(ContractModel):
 
 
 class EvaluationResult(ContractModel):
-    schemaVersion: Literal[1] = 1
+    schemaVersion: Literal["1.0"] = "1.0"
     jobId: UUID
     status: Literal["DONE", "FAILED"]
-    recommendation: Recommendation
-    finalReasons: list[str]
+    recommendation: Recommendation | None
+    finalReasons: list[NonEmptyText]
     tasksAssessment: list[TaskAssessment]
-    questions: list[str]
-    responseDraft: str
+    questions: list[NonEmptyText]
+    responseDraft: str | None
     degraded: bool
-    errors: list[str]
+    errors: list[EvaluationError]
     usage: Usage
     model: str
     evaluatorVersion: str

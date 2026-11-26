@@ -14,6 +14,7 @@ from brief_service.evaluation_contract import EvaluationRequest
 from brief_service.pipeline import evaluate
 
 REQUEST = EvaluationRequest(
+    schemaVersion="1.0",
     jobId="550e8400-e29b-41d4-a716-446655440000",
     applicationId="550e8400-e29b-41d4-a716-446655440001",
     text="Build a reporting dashboard for a synthetic project.",
@@ -74,12 +75,15 @@ def test_failed_evaluation_stage_is_degraded_without_leaking_provider_error():
 
     result = evaluate(REQUEST, create_fake)
 
-    assert result.status == "DONE"
-    assert result.recommendation == "expertise"
+    assert result.status == "FAILED"
+    assert result.recommendation is None
     assert result.degraded is True
-    assert result.errors == ["EvaluationResponse: RuntimeError"]
+    assert result.errors[0].model_dump() == {
+        "code": "EvaluationResponse",
+        "message": "RuntimeError",
+    }
     assert result.usage.promptTokens == 9
-    assert result.responseDraft == "We can build this."
+    assert result.responseDraft is None
 
 
 def test_debug_endpoint_serializes_result(monkeypatch):
@@ -90,5 +94,5 @@ def test_debug_endpoint_serializes_result(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["jobId"] == str(REQUEST.jobId)
-    assert response.json()["schemaVersion"] == 1
+    assert response.json()["schemaVersion"] == "1.0"
     assert response.json()["degraded"] is False
