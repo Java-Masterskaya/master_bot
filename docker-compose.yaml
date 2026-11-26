@@ -61,11 +61,12 @@ services:
       retries: 12
       start_period: 60s
 
-  # evaluator: # PY-01 добавит сборку и конфигурацию сервиса оценки.
-  #   build: ./evaluator
-  #   depends_on:
-  #     nats:
-  #       condition: service_healthy
+  evaluator:
+    build: ./evaluator
+    environment:
+      KODIK_API_KEY: ${KODIK_API_KEY:-}
+    ports:
+      - "127.0.0.1:8000:8000"
 
 volumes:
   master_bot_db_data:

@@ -42,6 +42,34 @@ JetStream и публикуется в чат менеджеров вместе 
 - [Структура проекта](docs/project-structure.md)
 - [Схема базы данных](docs/database-map.md)
 
+## Python-оценщик
+
+Исходники команды DS подключены как Git-сабмодуль на коммите `b76cbd1`.
+У них нет конфигурации для установки Python-пакета, поэтому образ берёт
+исходники из сабмодуля и устанавливает зависимости из его `requirements.txt`.
+
+```bash
+git submodule update --init --recursive
+cp -n .env.example .env
+docker compose up --build --wait evaluator
+curl http://localhost:8000/healthz
+# {"status":"ok"}
+```
+
+При необходимости укажите `KODIK_API_KEY` в локальном `.env`. Compose передаёт
+его только контейнеру оценщика. Для проверки `/healthz` ключ не требуется.
+
+Чтобы запустить проверки локально, активируйте виртуальное окружение
+с Python 3.12 и выполните из корня репозитория:
+
+```bash
+cd evaluator
+python -m pip install -r vendor/brief-evaluator/requirements.txt '.[dev]'
+python -m ruff check
+python -m pytest
+```
+
+
 ---
 
 ## Что уже реализовано и настроено
