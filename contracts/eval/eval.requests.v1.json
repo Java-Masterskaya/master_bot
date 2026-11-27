@@ -9,13 +9,13 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.0",
-      "description": "Версия контракта. Меняется только при breaking changes."
+      "pattern": "^1\\.\\d+$",
+      "description": "Версия контракта. Минорная версия поднимается при аддитивных изменениях, мажорная — при breaking changes (новый subject)."
     },
     "jobId": {
       "type": "string",
       "format": "uuid",
-      "description": "UUID задания оценки. Используется как Nast-Msg-Id для дедупликации публикации."
+      "description": "UUID задания оценки. Используется как Nats-Msg-Id для дедупликации публикации."
     },
     "applicationId": {
       "type": "string",
@@ -26,7 +26,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 100000,
-      "description": "Текст брифа заявки, передаваемый Python-оценщику как единый промпт контекст."
+      "description": "Текст брифа заявки, передаваемый Python-оценщику как единый текстовый контекст."
     }
   }
 }

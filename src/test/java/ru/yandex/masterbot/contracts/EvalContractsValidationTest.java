@@ -61,7 +61,7 @@ public class EvalContractsValidationTest {
             """);
     Set<ValidationMessage> errors = schema.validate(node);
 
-    assertThat(errors).anyMatch(m -> m.getMessage().contains("jobId"));
+    assertThat(errors).anyMatch(m -> m.getInstanceLocation().toString().contains("jobId"));
   }
 
   @Test
@@ -87,6 +87,63 @@ public class EvalContractsValidationTest {
             """);
     Set<ValidationMessage> errors = schema.validate(node);
 
-    assertThat(errors).isNotEmpty();
+    assertThat(errors).anyMatch(m -> m.getInstanceLocation().toString().contains("recommendation"));
+  }
+
+  @Test
+  void doneWithoutDegradedForbidsErrors() throws IOException {
+    JsonSchema schema = load("eval.results.v1.json");
+    JsonNode node =
+        MAPPER.readTree(
+            """
+            {"schemaVersion":"1.0",
+            "jobId":"6f1c2b8a-1a2b-4c3d-9e0f-1a2b3c4d5e6f",
+            "status":"DONE",
+            "recommendation":"accept",
+            "finalReasons":[],
+            "tasksAssessment":[],
+            "questions":[],
+            "responseDraft":null,
+            "degraded":false,
+            "errors":[{"code":"X","message":"Y"}],
+            "usage":{"promptTokens":0,"completionTokens":0},
+            "model":"m",
+            "evaluatorVersion":"1",
+            "durationMs":0}
+            """);
+    Set<ValidationMessage> errors = schema.validate(node);
+
+    assertThat(errors).anyMatch(m -> m.getInstanceLocation().toString().contains("errors"));
+  }
+
+  @Test
+  void schemaVersionRejectsMajorBump() throws IOException {
+    JsonSchema schema = load("eval.requests.v1.json");
+    JsonNode node =
+        MAPPER.readTree(
+            """
+            {"schemaVersion":"2.0",
+             "jobId":"6f1c2b8a-1a2b-4c3d-9e0f-1a2b3c4d5e6f",
+             "applicationId":"550e8400-e29b-41d4-a716-446655440000",
+             "text":"x"}
+            """);
+    Set<ValidationMessage> errors = schema.validate(node);
+
+    assertThat(errors).anyMatch(m -> m.getInstanceLocation().toString().contains("schemaVersion"));
+  }
+
+  @Test
+  void schemaVersionAcceptsMinorBump() throws IOException {
+    JsonSchema schema = load("eval.requests.v1.json");
+    JsonNode node =
+        MAPPER.readTree(
+            """
+            {"schemaVersion":"1.1",
+             "jobId":"6f1c2b8a-1a2b-4c3d-9e0f-1a2b3c4d5e6f",
+             "applicationId":"550e8400-e29b-41d4-a716-446655440000",
+             "text":"x"}
+            """);
+
+    assertThat(schema.validate(node)).isEmpty();
   }
 }

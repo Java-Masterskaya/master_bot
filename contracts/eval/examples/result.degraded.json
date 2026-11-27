@@ -10,7 +10,12 @@
   "questions": ["Уточните бюджет и сроки"],
   "responseDraft": null,
   "degraded": true,
-  "errors": [],
+  "errors": [
+    {
+      "code": "LLM_UNAVAILABLE",
+      "message": "Основная модель недоступна, использованы эвристики"
+    }
+  ],
   "usage": { "promptTokens": 0, "completionTokens": 0 },
   "model": "heuristic-v1",
   "evaluatorVersion": "1.0.0-degraded",

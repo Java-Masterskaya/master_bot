@@ -24,7 +24,8 @@
   "properties": {
     "schemaVersion": {
       "type": "string",
-      "const": "1.0"
+      "pattern": "^1\\.\\d+$",
+      "description": "Версия контракта. Минорная версия поднимается при аддитивных изменениях, мажорная — при breaking changes (новый subject)."
     },
     "jobId": {
       "type": "string",
@@ -41,7 +42,7 @@
     },
     "finalReasons": {
       "type": "array",
-      "items": {"type": "string", "minLength": 1 },
+      "items": { "type": "string", "minLength": 1 },
       "description": "Причины итоговой рекомендации. Пустой массив при FAILED."
     },
     "tasksAssessment": {
@@ -72,7 +73,7 @@
     },
     "degraded": {
       "type": "boolean",
-      "description": "true — использован упрощённый режим оценки (эвристики, fallback-модель)."
+      "description": "true — использован упрощённый режим оценки (эвристики, fallback-модель). В degraded-режиме errors может быть непустым даже при status=DONE."
     },
     "errors": {
       "type": "array",
@@ -85,7 +86,7 @@
           "message": { "type": "string", "minLength": 1 }
         }
       },
-      "description": "Ошибки выполнения. Непустой массив при status=FAILED."
+      "description": "Ошибки выполнения. Непустой массив при status=FAILED или при status=DONE с degraded=true."
     },
     "usage": {
       "type": "object",
@@ -114,11 +115,24 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "status": { "const": "DONE" } } },
+      "if": {
+        "properties": {
+          "status": { "const": "DONE" },
+          "degraded": { "const": false }
+        }
+      },
       "then": {
         "properties": {
           "recommendation": { "type": "string" },
           "errors": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "DONE" } } },
+      "then": {
+        "properties": {
+          "recommendation": { "type": "string" }
         }
       }
     },
