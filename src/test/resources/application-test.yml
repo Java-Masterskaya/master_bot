@@ -1,3 +1,9 @@
+app:
+  admin:
+    token: test-admin-token
+  intake:
+    token: test-intake-token
+
 spring:
   flyway:
     enabled: true

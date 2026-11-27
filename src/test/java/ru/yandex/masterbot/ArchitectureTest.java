@@ -19,7 +19,7 @@ public class ArchitectureTest {
   static final ArchRule domain_and_application_should_not_depend_on_adapter =
       noClasses()
           .that()
-          .resideInAnyPackage("..domain..", "..application..")
+          .resideInAnyPackage("ru.yandex.masterbot.domain..", "ru.yandex.masterbot.application..")
           .should()
           .dependOnClassesThat()
           .resideInAnyPackage("..adapter..")
