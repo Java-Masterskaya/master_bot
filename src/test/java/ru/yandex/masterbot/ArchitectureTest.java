@@ -28,6 +28,18 @@ public class ArchitectureTest {
 
   @SuppressWarnings("unused")
   @ArchTest
+  static final ArchRule ports_should_not_depend_on_adapter =
+      noClasses()
+          .that()
+          .resideInAPackage("..port..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("..adapter..")
+          .because("Порты не должны зависеть от реализаций адаптеров")
+          .allowEmptyShould(true);
+
+  @SuppressWarnings("unused")
+  @ArchTest
   static final ArchRule domain_should_not_depend_on_spring =
       noClasses()
           .that()
