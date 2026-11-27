@@ -144,9 +144,9 @@ JetStream и публикуется в чат менеджеров вместе 
   каждой смены статуса** (не только для терминальных) и
   проверяется в каноническом конструкторе `StatusChange` (`null`/`blank` → `IllegalArgumentException`).
 - **`IllegalStatusTransitionException`** — доменное исключение при запрещённом переходе.
-- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, NPE,
-  иммутабельность истории, обязательность `actor`. Тесты лежат в том же пакете
-  `com.example.application.domain`, что и продакшн-классы.
+- **Тесты** — все 16 пар статусов покрыты `@CsvSource`; проверены терминальность, валидация,
+- иммутабельность истории и обязательность `actor`.
+- Тесты расположены в пакете `ru.yandex.masterbot.domain`.
 - **Зависимости** — только `java.*`; ни Spring, ни JPA, ни Lombok.
 
 **Сводная таблица перехода статусов**
@@ -157,3 +157,53 @@ JetStream и публикуется в чат менеджеров вместе 
 | **IN_REVIEW** | ❌  | ❌        | ✅       | ✅       |
 | **ACCEPTED**  | ❌  | ❌        | ❌       | ❌       |
 | **REJECTED**  | ❌  | ❌        | ❌       | ❌       
+
+## Сервис заявок и persistence-слой (DBA-02)
+
+### ApplicationService
+
+Реализован единый сервис `ApplicationService`, отвечающий за создание заявок и изменение их статусов. Сервис используется как единая точка входа для дальнейшей интеграции с HTTP API, ботом и другими каналами поступления заявок.
+
+- `create(brief, source, requester)` — создание заявки.
+- `transition(id, target, actor, comment)` — изменение статуса заявки.
+
+### JPA и PostgreSQL
+
+- `ApplicationEntity` — JPA-сущность заявки, соответствующая таблице `applications`.
+- `StatusHistoryEntity` — JPA-сущность истории статусов, соответствующая таблице `application_status_history`.
+- `ApplicationJpaRepository` и `StatusHistoryJpaRepository` — репозитории Spring Data JPA.
+- Номер заявки генерируется PostgreSQL sequence `application_number_seq`.
+- JSONB-поля отображаются через Hibernate `@JdbcTypeCode(SqlTypes.JSON)`.
+- Hibernate работает в режиме `ddl-auto: validate`; структура БД определяется Flyway-миграциями.
+
+### Архитектура
+
+Используется разделение на application-слой и persistence-адаптер:
+
+- `ApplicationStore` — порт хранения заявок, определённый в application-слое.
+- `ApplicationStoreAdapter` — реализация порта на базе Spring Data JPA.
+- `ApplicationMapper` — преобразование JPA-сущностей в доменную модель и обратно.
+- `ApplicationQuery` — порт для получения последних заявок по requester.
+- `ApplicationQueryAdapter` — реализация запросов к PostgreSQL.
+
+ApplicationService не зависит напрямую от JPA, Entity или Spring Data Repository. Работа с persistence осуществляется через порт `ApplicationStore`.
+
+### Транзакционность и конкурентный доступ
+
+- Создание заявки выполняется с сохранением данных брифа, источника и requester.
+- Смена статуса и запись в `application_status_history` выполняются в одной транзакции.
+- Допустимость перехода проверяется доменной моделью `Application` / `ApplicationStatus`.
+- Для обнаружения конкурентных изменений используется optimistic locking через `@Version`.
+- При параллельном изменении одной заявки конфликт версий предотвращает успешное сохранение обоих переходов.
+
+### Интеграционные тесты
+
+`ApplicationServiceIntegrationTest` использует `SpringBootTest` и PostgreSQL через Testcontainers.
+
+Проверяются сценарии:
+
+- создание заявки и получение сгенерированного номера;
+- успешная смена статуса и запись истории;
+- недопустимый переход без изменения состояния заявки;
+- конкурентные переходы одной заявки: один успешно завершается, второй получает ошибку optimistic locking;
+- корректность итогового статуса, версии и истории после конкурентной операции.
