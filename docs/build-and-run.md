@@ -137,12 +137,18 @@ docker compose up -d nats
 docker compose up -d postgres
 ```
 
-#### Запуск приложения с профилем `local`
+#### Запуск приложения с профилем
 
 Через Gradle:
 
+Профиль `local`
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local' --stacktrace
+```
+
+Или профиль `prod` (для `prod` необходимо заполнить в [application-prod.yml](../src/main/resources/application-prod.yml) недостающие значения токенов)
+```bash
+./gradlew bootRun --args='--spring.profiles.active=prod' --stacktrace
 ```
 
 Или напрямую из IntelliJ IDEA (без Gradle):

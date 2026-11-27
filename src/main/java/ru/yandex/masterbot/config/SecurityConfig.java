@@ -62,7 +62,12 @@ public class SecurityConfig {
   public SecurityFilterChain defaultFilterChain(HttpSecurity http) throws Exception {
     http.securityMatcher("/**")
         .authorizeHttpRequests(auth ->
-            auth.requestMatchers("/actuator/health/**", "/swagger-ui/**", "/v3/api-docs/**")
+            auth.requestMatchers(
+                    "/actuator/health/**",
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/webjars/**")
                 .permitAll()
                 .anyRequest()
                 .denyAll())

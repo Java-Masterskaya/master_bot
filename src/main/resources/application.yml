@@ -58,7 +58,6 @@ logging:
     org:
       springframework: info
 
-
 app:
   db:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/master-bot?currentSchema=db}
