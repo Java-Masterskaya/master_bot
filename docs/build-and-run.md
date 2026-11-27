@@ -93,7 +93,8 @@ cp .env.example .env  # если файла .env ещё нет
 ```
 
 ```bash
-docker compose up --build -d # Сборка и запуск контейнера
+git submodule update --init --recursive
+docker compose up --build -d # Сборка и запуск контейнеров
 ```
 
 ```bash
