@@ -1,0 +1,31 @@
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  db:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/master-bot?currentSchema=db}
+    username: ${DB_USER:dbuser}
+    password: ${DB_PASSWORD:}
+  admin:
+    token: ${ADMIN_TOKEN:}
+  intake:
+    token: ${INTAKE_TOKEN:}
+  nats:
+    url: ${NATS_URL:nats://localhost:4222}
+  channels:
+    telegram:
+      enabled: ${TELEGRAM_ENABLED:false}
+      token: ${TELEGRAM_TOKEN:}
+      mode: ${TELEGRAM_MODE:polling}
+    yandex360:
+      enabled: ${YANDEX360_ENABLED:false}
+      token: ${YANDEX360_TOKEN:}
+      mode: ${YANDEX360_MODE:polling}
+  managers-chat:
+    channel: ${MANAGERS_CHAT_CHANNEL:yandex360}
+    chat-id: ${MANAGERS_CHAT_ID:}
+  evaluation:
+    enabled: ${EVALUATION_ENABLED:false}
