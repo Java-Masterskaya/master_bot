@@ -1,5 +1,7 @@
 package ru.yandex.masterbot.domain.brief;
 
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -12,6 +14,6 @@ public record Brief(Map<BriefField, String> answers) {
         throw new IllegalArgumentException(field.name() + ": " + field.errorHint());
       }
     }
-    answers = Map.copyOf(answers);
+    answers = Collections.unmodifiableMap(new EnumMap<>(answers));
   }
 }

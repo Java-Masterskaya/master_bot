@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,6 +51,7 @@ class BriefTest {
     answers.clear();
 
     assertEquals(validAnswers(), brief.answers());
+    assertEquals(List.of(BriefField.values()), List.copyOf(brief.answers().keySet()));
     assertThrows(UnsupportedOperationException.class, brief.answers()::clear);
   }
 
