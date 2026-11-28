@@ -76,6 +76,7 @@ app:
       mode: ${TELEGRAM_MODE:polling}
     yandex360:
       enabled: ${YANDEX360_ENABLED:false}
+      base-url: ${YANDEX360_URL:https://botapi.messenger.yandex.net/bot/v1}
       token: ${YANDEX360_TOKEN:}
       mode: ${YANDEX360_MODE:polling}
   managers-chat:
