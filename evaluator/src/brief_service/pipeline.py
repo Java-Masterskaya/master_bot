@@ -90,10 +90,12 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
     counter = EvaluationTokenCounter()
     errors = []
     context = ProjectContext(input_text=request.text)
+    failed = False
     try:
         llm = llm_factory(counter)
     except Exception as error:
         record_failure(errors, "model_initialization", error)
+        failed = True
     else:
         stages = (
             (StructuringModule, StructuringResponse()),
@@ -108,6 +110,7 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
         )
         for module, fallback in stages:
             stage_start = perf_counter()
+            previous_error_count = len(errors)
             try:
                 context = module(StructuredModelWithFallback(llm, fallback, errors)).process(
                     context
@@ -122,8 +125,9 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
                     module.__name__,
                     perf_counter() - stage_start,
                 )
+            if module in (StructuringModule, EvaluationModule):
+                failed |= len(errors) > previous_error_count
 
-    failed = bool(errors)
     return EvaluationResult(
         jobId=request.jobId,
         status="FAILED" if failed else "DONE",
@@ -134,7 +138,7 @@ def evaluate(request: EvaluationRequest, llm_factory=create_llm) -> EvaluationRe
         ],
         questions=[question for question in context.questions if question],
         responseDraft=None if failed else context.response_draft or None,
-        degraded=failed,
+        degraded=bool(errors),
         errors=errors,
         usage={
             "promptTokens": counter.total_prompt_tokens,

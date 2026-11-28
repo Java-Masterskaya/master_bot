@@ -12,7 +12,7 @@ class ContractModel(BaseModel):
 
 
 class EvaluationRequest(ContractModel):
-    schemaVersion: Literal["1.0"]
+    schemaVersion: str = Field(pattern=r"^1\.\d+$")
     jobId: UUID
     applicationId: UUID
     text: str = Field(min_length=1, max_length=100_000)
@@ -46,6 +46,6 @@ class EvaluationResult(ContractModel):
     degraded: bool
     errors: list[EvaluationError]
     usage: Usage
-    model: str
-    evaluatorVersion: str
+    model: NonEmptyText
+    evaluatorVersion: NonEmptyText
     durationMs: int = Field(ge=0)

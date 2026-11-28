@@ -1,6 +1,9 @@
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 from fastapi.testclient import TestClient
+from jsonschema import Draft202012Validator
 from langchain_core.outputs import LLMResult
 from src.models import (
     EvaluationResponse,
@@ -19,6 +22,15 @@ REQUEST = EvaluationRequest(
     applicationId="550e8400-e29b-41d4-a716-446655440001",
     text="Build a reporting dashboard for a synthetic project.",
 )
+CONTRACTS = Path(__file__).resolve().parents[2] / "contracts" / "eval"
+
+
+def validate_contract(name, value):
+    with (CONTRACTS / name).open(encoding="utf-8") as schema_file:
+        validator = Draft202012Validator(
+            json.load(schema_file), format_checker=Draft202012Validator.FORMAT_CHECKER
+        )
+    validator.validate(value.model_dump(mode="json"))
 
 
 class FakeLLM:
@@ -67,6 +79,8 @@ def test_success_counts_tokens_per_call():
     assert first.errors == []
     assert first.usage.model_dump() == {"promptTokens": 12, "completionTokens": 8}
     assert second.usage == first.usage
+    validate_contract("eval.requests.v1.json", REQUEST)
+    validate_contract("eval.results.v1.json", first)
 
 
 def test_failed_evaluation_stage_is_degraded_without_leaking_provider_error():
@@ -84,6 +98,18 @@ def test_failed_evaluation_stage_is_degraded_without_leaking_provider_error():
     }
     assert result.usage.promptTokens == 9
     assert result.responseDraft is None
+    validate_contract("eval.results.v1.json", result)
+
+
+def test_failed_question_stage_preserves_recommendation():
+    result = evaluate(REQUEST, lambda counter: FakeLLM(counter, QuestionGenerationResponse))
+
+    assert result.status == "DONE"
+    assert result.recommendation == "accept"
+    assert result.degraded is True
+    assert result.errors[0].code == "QuestionGenerationResponse"
+    assert result.responseDraft == "We can build this."
+    validate_contract("eval.results.v1.json", result)
 
 
 def test_debug_endpoint_serializes_result(monkeypatch):
