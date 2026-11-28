@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://masterbot.yandex/contracts/eval/eval.results.v1.json",
+  "title": "EvalResult",
+  "description": "Результат оценки. Публикуется Python-оценщиком в subject eval.results.v1. Nats-Msg-Id = jobId.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "jobId",
+    "status",
+    "recommendation",
+    "finalReasons",
+    "tasksAssessment",
+    "questions",
+    "responseDraft",
+    "degraded",
+    "errors",
+    "usage",
+    "model",
+    "evaluatorVersion",
+    "durationMs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.\\d+$",
+      "description": "Версия контракта. Минорная версия поднимается при аддитивных изменениях, мажорная — при breaking changes (новый subject)."
+    },
+    "jobId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DONE", "FAILED"]
+    },
+    "recommendation": {
+      "type": ["string", "null"],
+      "enum": ["accept", "reject", "clarify", "simplify", "expertise", null],
+      "description": "Итоговая рекомендация. null только при status=FAILED."
+    },
+    "finalReasons": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Причины итоговой рекомендации. Пустой массив при FAILED."
+    },
+    "tasksAssessment": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task", "category", "reason"],
+        "properties": {
+          "task": { "type": "string", "minLength": 1 },
+          "category": {
+            "type": "string",
+            "enum": ["accept", "reject", "clarify", "simplify", "expertise"]
+          },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Оценки отдельных задач брифа."
+    },
+    "questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Вопросы, требующие уточнения у заявителя."
+    },
+    "responseDraft": {
+      "type": ["string", "null"],
+      "description": "Черновик ответа заявителю. null при FAILED или если черновик не сформирован."
+    },
+    "degraded": {
+      "type": "boolean",
+      "description": "true — использован упрощённый режим оценки (эвристики, fallback-модель). В degraded-режиме errors может быть непустым даже при status=DONE."
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Ошибки выполнения. Непустой массив при status=FAILED или при status=DONE с degraded=true."
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["promptTokens", "completionTokens"],
+      "properties": {
+        "promptTokens": { "type": "integer", "minimum": 0 },
+        "completionTokens": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Идентификатор модели, например gpt-4o-mini / yandexgpt-lite."
+    },
+    "evaluatorVersion": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Версия пайплайна оценщика (SemVer или git sha)."
+    },
+    "durationMs": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Длительность оценки в миллисекундах."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": { "const": "DONE" },
+          "degraded": { "const": false }
+        }
+      },
+      "then": {
+        "properties": {
+          "recommendation": { "type": "string" },
+          "errors": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "DONE" } } },
+      "then": {
+        "properties": {
+          "recommendation": { "type": "string" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "FAILED" } } },
+      "then": {
+        "properties": {
+          "recommendation": { "type": "null" },
+          "errors": { "minItems": 1 }
+        }
+      }
+    }
+  ]
+}
