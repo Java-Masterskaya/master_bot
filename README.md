@@ -192,7 +192,7 @@ python -m pytest
 | **NEW**       | ❌  | ✅        | ❌       | ❌       |
 | **IN_REVIEW** | ❌  | ❌        | ✅       | ✅       |
 | **ACCEPTED**  | ❌  | ❌        | ❌       | ❌       |
-| **REJECTED**  | ❌  | ❌        | ❌       | ❌       
+| **REJECTED**  | ❌  | ❌        | ❌       | ❌       |
 
 ## Сервис заявок и persistence-слой (DBA-02)
 
